@@ -1,0 +1,20 @@
+{
+  "name": "zkproof-integration",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^4.19.2",
+    "snarkjs": "^0.7.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
