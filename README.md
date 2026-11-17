@@ -1,53 +1,111 @@
-# StarkCircom SDK
+# StarkCircom
 
-TypeScript tools for turning a local Circom Groth16 proof into a replay-safe Starknet action.
+StarkCircom lets a web app prove a private fact locally and use that proof to approve an action on Starknet.
 
-The SDK supports Circom and SnarkJS Groth16 proofs on BN254. It proves and verifies locally, prepares Garaga calldata, builds Starknet calls, decodes verifier responses, and creates compiled Cairo artifacts through pinned Docker builders.
+The private information stays in the browser. Starknet receives the proof and public values needed to check it, but not the private witness used to create it.
 
-The repository now includes a proof-bound recall claim. Its 12 public signals bind the proof to the protocol version, Starknet chain, consumer contract, action, policy version, wallet actor, policy hash, expiry, nullifier, result, and two authenticated-set roots. A Cairo consumer verifies those bindings, rejects replayed nullifiers, and records a claim tier. A separate registry commits a policy to the verifier address, class hash, artifact-manifest hash, and public-signal count.
+## What this means
 
-The browser app validates the artifacts and asks Argent or Braavos to approve declarations, deployments, registry writes, and proof consumption on Starknet Sepolia. Private witness values are generated and proved in the browser. The wallet remains the signing authority. No live deployment has been performed or verified yet.
+A normal smart contract can only make decisions from public data. StarkCircom adds a private proof before the contract changes state.
 
-## What changed
+For example, a customer can prove all of the following without publishing the underlying product record or ownership secret.
 
-The original repository was a small Express demonstration that depended on missing generated files. The overhaul replaces it with the following.
+- They own an issued product.
+- The product belongs to an affected recall batch.
+- Its warranty is still valid.
+- The claim is being made by the connected wallet.
 
-- Strict TypeScript SDK
-- Reproducible development artifact script
-- Hash-checked circuit manifests
-- Local Groth16 proving and verification
-- Garaga Starknet calldata generation
-- Typed read-only Starknet verification calls
-- Pinned Garaga 1.1.0, Scarb 2.16.1, and Cairo 2.16.1 verifier builder
-- Client-side Sierra and CASM class-hash checks
-- Declaration payload creation from hash-checked build artifacts
-- Wallet-approved Sepolia declaration and UDC deployment app
-- Fresh read-only verification of a fixed sample after deployment
-- Proof-action envelope validation and exact consumer-call construction
-- An 8,508-constraint private recall circuit with 12 public bindings
-- Replay-safe Cairo consumer and owner-managed verifier registry
-- Browser-local recall proof generation followed by a wallet transaction
-- Clear separation between local checks, RPC calls, and transactions
-- Valid, invalid, wrong-owner, wrong-batch, and context-mismatch proof tests
+If the proof is valid, the consumer contract records the recall claim. It also marks the proof nullifier as spent so the same claim cannot be used twice.
 
-## Requirements
+The proof is tied to the chain, contract, wallet, action, policy, expiry time, and authenticated data roots. This prevents someone from copying a valid proof into a different context.
+
+## What is included
+
+- A strict TypeScript SDK for Circom Groth16 proofs
+- Local proof generation and local verification with SnarkJS
+- Garaga calldata generation for Starknet
+- Reproducible Cairo verifier generation
+- Sierra, CASM, ABI, and class-hash validation
+- A replay-safe Cairo proof consumer
+- An owner-managed verifier registry
+- A private product-recall circuit
+- A browser app for wallet-approved Sepolia deployment
+- Tests for valid proofs, invalid proofs, wrong owners, wrong batches, expiry, changed policies, and mismatched contexts
+
+## Use cases
+
+The recall claim is one example. The same pattern can support other actions where a user must prove something without exposing all source data.
+
+### Private warranty and recall claims
+
+Prove ownership, eligibility, and affected-batch membership before recording a claim.
+
+### Private access control
+
+Prove membership, certification, account status, or another policy requirement before granting access.
+
+### Private rewards
+
+Prove that a wallet completed an eligible action without publishing the full activity history.
+
+### Compliance checks
+
+Prove that required checks passed while keeping sensitive identity or business data outside the public transaction.
+
+### Supply-chain actions
+
+Prove that an item belongs to an approved or affected set before allowing a return, replacement, transfer, or payment.
+
+### Private voting and claims
+
+Prove eligibility and prevent repeat participation with a nullifier, without publishing the private eligibility record.
+
+## Run the project
+
+### Requirements
 
 - Node.js 20 or newer
 - npm 10 or newer
-- Docker for verifier generation and compilation
+- Docker for generating and compiling Cairo verifiers
+- Argent or Braavos for Sepolia transactions
 
-SDK consumers do not need to install Rust, Python, Cairo, or Scarb. The verifier builder contains the pinned Python and Cairo toolchain.
-
-## Install and check
+### Install and test
 
 ```bash
 npm install
 npm run check
 ```
 
-The first test run builds the development multiplier circuit and creates ignored artifacts under `.artifacts/multiplier`.
+This builds the development circuits, runs the TypeScript checks, generates real proofs, and runs the test suite.
 
-## Basic usage
+### Start the app
+
+```bash
+npm run web:dev
+```
+
+Open the following page.
+
+```text
+http://127.0.0.1:3200/actions
+```
+
+The app guides the user through one deployment sequence.
+
+1. Check the circuit, verifier, contract artifacts, and class hashes.
+2. Connect Argent or Braavos.
+3. Switch the wallet to Starknet Sepolia.
+4. Add Sepolia STRK if the wallet needs testnet fees.
+5. Approve the verifier, consumer, and registry declarations.
+6. Approve deployment of the three contracts.
+7. Approve the verifier policy registration.
+8. Generate the recall proof locally.
+9. Approve the proof-bound recall transaction.
+10. Read the recorded claim and confirm that its nullifier is spent.
+
+Every declaration and transaction requires approval in the connected wallet. The app never asks for or stores a private key or seed phrase.
+
+## Use the SDK
 
 ```ts
 import {
@@ -57,18 +115,24 @@ import {
 } from "@starkcircom/sdk";
 import { loadCircuitBundle } from "@starkcircom/sdk/node";
 
-const bundle = await loadCircuitBundle(".artifacts/multiplier/manifest.json");
+const bundle = await loadCircuitBundle(
+  ".artifacts/multiplier/manifest.json",
+);
 
 const { proof, publicSignals } = await generateGroth16Proof(
   { a: 3, b: 11 },
   bundle.artifacts,
 );
 
-const validLocally = await verifyGroth16ProofLocal(
+const valid = await verifyGroth16ProofLocal(
   bundle.verificationKey,
   proof,
   publicSignals,
 );
+
+if (!valid) {
+  throw new Error("The proof is not valid.");
+}
 
 const prepared = await prepareGroth16ProofForStarknet(
   bundle.verificationKey,
@@ -76,135 +140,46 @@ const prepared = await prepareGroth16ProofForStarknet(
   publicSignals,
 );
 
-console.log(validLocally); // true
-console.log(publicSignals); // ["33"]
-console.log(prepared.calldata.length);
+console.log(prepared.calldata);
 ```
 
-## Read-only Starknet verification
+`prepareGroth16ProofForStarknet` creates the calldata expected by the generated Garaga verifier. It does not submit a transaction.
 
-Once the matching Garaga verifier is deployed, it can be called without submitting a transaction.
+For proof-authorized state changes, use `buildProofActionConsumerCall` after checking the decoded action envelope with `assertProofActionEnvelope`.
 
-```ts
-import { RpcProvider } from "starknet";
-import { verifyGroth16ProofReadOnly } from "@starkcircom/sdk";
-
-const provider = new RpcProvider({ nodeUrl: process.env.STARKNET_RPC_URL });
-
-const result = await verifyGroth16ProofReadOnly(
-  provider,
-  "0x_verifier_address",
-  prepared,
-);
-```
-
-A read-only call is RPC simulation. It does not create a transaction and does not change Starknet state.
-
-For a state-changing application flow, use `buildGroth16VerifierCall` and include the returned call in a wallet or consumer-contract transaction.
-
-## Scripts
+## Main commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run circuit:build` | Build missing or stale development artifacts |
-| `npm run circuit:rebuild` | Force a fresh development setup and contribution |
-| `npm run verifier:build` | Generate and compile the multiplier Cairo verifier in Docker |
-| `npm run action:build` | Build or reuse the recall circuit artifacts |
-| `npm run action:rebuild` | Force a fresh recall-circuit setup and contribution |
-| `npm run action:verifier:build` | Generate and compile the recall verifier |
-| `npm run contracts:build` | Compile and hash the consumer and registry artifacts |
-| `npm run contracts:test` | Run replay and state-change tests in a pinned Snforge container |
-| `npm run test:verifier` | Rebuild and validate the multiplier verifier bundle |
-| `npm test` | Run proof, calldata, manifest, and Starknet call tests |
-| `npm run typecheck` | Run strict SDK TypeScript checks |
-| `npm run web:typecheck` | Run strict deployment-app TypeScript checks |
-| `npm run web:dev` | Build required artifacts and start the deployment app |
-| `npm run web:build` | Create a production deployment-app build |
-| `npm run build` | Emit the SDK into `dist` |
-| `npm run check` | Run SDK and app type checks, tests, and the package build |
+| `npm run check` | Run type checks, proof tests, and the SDK build |
+| `npm run web:dev` | Prepare artifacts and start the browser app |
+| `npm run web:build` | Build the browser app for production |
+| `npm run action:build` | Build the recall circuit |
+| `npm run action:verifier:build` | Generate and compile its Garaga verifier |
+| `npm run contracts:build` | Compile and hash the consumer and registry |
+| `npm run contracts:test` | Run the Cairo replay and state-change tests |
+| `npm run verifier:build` | Build the small multiplier example verifier |
 | `npm run clean` | Remove generated artifacts and build output |
 
-## Artifact safety
+## Project structure
 
-The bundled PTAU file and generated circuit-specific contribution are development fixtures. They are not presented as a production ceremony.
-
-The build writes hashes for the WASM, R1CS, zkey, and verification key into the circuit manifest. `loadCircuitBundle` checks each hash before returning paths to the prover.
-
-Production deployments should use a documented ceremony, independently verified artifacts, pinned verifier toolchains, and a security review.
-
-## Verifier build
-
-```bash
-npm run verifier:build
+```text
+apps/deployer/             Browser deployment and proof-action app
+circuits/recall_action.circom
+                           Private recall circuit
+contracts/proof_actions/  Cairo consumer, registry, and tests
+scripts/                  Circuit, verifier, and contract builders
+src/                      TypeScript SDK
+tests/                    SDK and proof-action tests
+toolchain/                Pinned Docker builders
 ```
 
-The builder accepts only the public verification key. It generates the Garaga Cairo source, compiles Sierra and CASM, extracts the ABI, computes class hashes on the host with Starknet.js, and writes a hash-checked manifest under `.artifacts/verifiers/multiplier_verifier`.
+Generated circuit and contract artifacts are stored under `.artifacts` and are not committed.
 
-The default toolchain is pinned to Garaga 1.1.0 at commit `307c00af4a7f08653123d1ec9a6edae81f288260`, Scarb 2.16.1, Cairo 2.16.1, and Python 3.12.12. Python dependencies are locked. The Python base image uses a fixed digest. Scarb release downloads are checked against official SHA-256 values for AMD64 and ARM64 Linux.
+## Important limits
 
-Load the output before declaration.
+The included recall data is synthetic. The issued-product root and affected-batch root show how authenticated membership can work, but they are not connected to a real manufacturer.
 
-```ts
-import { loadVerifierBuild } from "@starkcircom/sdk/node";
+A production use case still needs a trusted publisher for those roots, an update policy, a process for missing records, a reviewed proving-key ceremony, and a contract security review.
 
-const verifier = await loadVerifierBuild(
-  ".artifacts/verifiers/multiplier_verifier/manifest.json",
-  { verificationKeyFile: ".artifacts/multiplier/verification_key.json" },
-);
-
-// Suitable for account.declare after wallet approval.
-console.log(verifier.declaration);
-```
-
-No wallet action is performed by the build command.
-
-The current ignored artifacts were rebuilt with an explicit local fallback using Garaga 1.1.0, Scarb/Cairo 2.16.1, and Python 3.12.11 after Docker Desktop reported content-store I/O errors. Their manifests record that toolchain. Re-run the default Docker builders and compare the resulting hashes before a release.
-
-## Wallet deployment app
-
-```bash
-npm run web:dev
-```
-
-Open `http://127.0.0.1:3200`, connect Argent or Braavos, and approve each requested action in the wallet. The account must be on Starknet Sepolia and funded with Sepolia STRK. Open `/actions` for the proof-bound recall launch workbench. It checks the fee balance, links to a Sepolia faucet when empty, and records confirmed transaction hashes and deployed addresses with Voyager links.
-
-The app does the following.
-
-1. Loads the generated verifier bundle through `loadVerifierBuild`.
-2. Recomputes the Sierra and CASM class hashes in the browser.
-3. Checks whether the class is already declared on Sepolia.
-4. Requests wallet approval for declaration when needed.
-5. Requests wallet approval for a unique UDC deployment.
-6. Generates the fixed `3 × 11 = 33` sample proof and performs a read-only RPC verification against the deployed contract.
-
-The app never reads or stores a private key or seed phrase. The multiplier sample route uses only fixed demonstration inputs. The recall flow creates its ownership secret in the browser and sends no private witness to an API. The server serves only public WASM, zkey, verification-key, and Cairo artifacts.
-
-The recall data is synthetic. Its issued-product and affected-batch roots demonstrate authenticated-set membership, but they are not production manufacturer attestations. A real deployment must define who publishes each root, how updates are authorized, how omissions are challenged, and how users recover when source data is missing.
-
-## Current status
-
-| Capability | Status |
-| --- | --- |
-| Compile the included circuit | Met |
-| Generate a Groth16 proof locally | Met |
-| Verify a proof locally | Met |
-| Generate Garaga calldata | Met |
-| Build a typed Starknet verifier call | Met |
-| Decode a Garaga verifier result | Met |
-| Generate Garaga Cairo verifier | Met |
-| Compile Sierra, CASM, and ABI | Met |
-| Verify artifact and class hashes | Met |
-| Build a declaration payload | Met |
-| Wallet declaration and deployment flow | Met in code, not executed |
-| Declare and deploy verifier to Sepolia | Missing live wallet execution |
-| Execute a fresh Starknet verification | Missing until deployment |
-| Proof-bound recall circuit and action envelope | Met |
-| Replay-safe consumer and verifier registry source | Met |
-| Compile and hash consumer and registry artifacts | Met |
-| Browser-local recall proof | Met, latest production-browser check completed in 1.28 seconds with no browser errors |
-| Wallet-approved recall action flow | Met in code, not executed |
-| Consumer replay/state-change contract tests | Added, fresh rerun blocked by local Docker storage failure |
-| Authenticated production issuer and recall roots | Missing, synthetic fixture only |
-| Declare and execute the proof-bound action on Sepolia | Missing live wallet execution |
-
-Do not describe this repository as end-to-end deployed, audited, production-safe, or backed by authenticated manufacturer data until those missing checks have fresh evidence.
+The repository contains the Sepolia wallet flow, but it contains no wallet credentials and cannot approve transactions by itself.
