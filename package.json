@@ -1,20 +1,69 @@
 {
-  "name": "zkproof-integration",
-  "version": "1.0.0",
-  "main": "src/server.js",
-  "scripts": {
-    "test": "jest",
-    "start": "node src/server.js"
-  },
-  "keywords": [],
-  "author": "",
+  "name": "@starkcircom/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript tools for proving Circom Groth16 circuits and preparing Starknet verifier calls",
+  "type": "module",
   "license": "ISC",
-  "description": "",
+  "sideEffects": false,
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "ptau:fetch": "node scripts/fetch-ptau.mjs 12 14",
+    "circuit:build": "node scripts/fetch-ptau.mjs 12 && node scripts/build-circuit.mjs",
+    "circuit:rebuild": "node scripts/fetch-ptau.mjs 12 && node scripts/build-circuit.mjs --force",
+    "action:build": "node scripts/fetch-ptau.mjs 14 && node scripts/build-recall-action.mjs",
+    "action:rebuild": "node scripts/fetch-ptau.mjs 14 && node scripts/build-recall-action.mjs --force",
+    "action:verifier:build": "npm run action:build && node scripts/build-verifier.mjs --name recall_action_verifier --vk .artifacts/recall_action/verification_key.json",
+    "contracts:build": "node scripts/build-proof-actions.mjs",
+    "contracts:test": "node scripts/test-proof-actions.mjs",
+    "verifier:build": "npm run circuit:build && node scripts/build-verifier.mjs",
+    "clean": "node scripts/clean.mjs",
+    "test": "npm run circuit:build && npm run action:build && vitest run",
+    "test:verifier": "npm run verifier:build && vitest run tests/verifier-build.test.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "web:dev": "npm run build && npm run circuit:build && node scripts/prepare-deployer.mjs && npm --workspace @starkcircom/deployer run dev -- --hostname 127.0.0.1 --port 3200",
+    "web:build": "npm run build && npm --workspace @starkcircom/deployer run build",
+    "web:typecheck": "npm run build && npm --workspace @starkcircom/deployer run typecheck",
+    "check": "npm run typecheck && npm run web:typecheck && npm test && npm run build"
+  },
   "dependencies": {
-    "express": "^4.19.2",
-    "snarkjs": "^0.7.4"
+    "garaga": "1.1.0",
+    "snarkjs": "0.7.6",
+    "starknet": "^10.8.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "@types/node": "^24.10.0",
+    "@types/snarkjs": "^0.7.9",
+    "circom2": "0.2.23",
+    "circomlib": "^2.0.5",
+    "poseidon-lite": "^0.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "jsonpath": "1.3.0",
+    "underscore": "1.13.8"
   }
 }

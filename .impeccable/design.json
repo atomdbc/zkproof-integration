@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T18:27:58Z",
+  "title": "Design System: StarkCircom",
+  "extensions": {
+    "colorMeta": {
+      "starknet-coral": {
+        "role": "primary",
+        "displayName": "Starknet Coral",
+        "canonical": "#b93424",
+        "tonalRamp": ["#40100b", "#6b1c13", "#8b251a", "#b93424", "#d95a44", "#f58f7b", "#ffc0b2", "#fff0ec"]
+      },
+      "instrument-canvas": {
+        "role": "neutral",
+        "displayName": "Instrument Canvas",
+        "canonical": "#f5f6f8",
+        "tonalRamp": ["#202329", "#383d46", "#555c68", "#747d8b", "#9ba3ae", "#c1c6ce", "#dde0e5", "#f5f6f8"]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#13161b",
+        "tonalRamp": ["#13161b", "#292d34", "#41464f", "#606773", "#828a96", "#a8aeb7", "#d1d4d9", "#f1f2f4"]
+      },
+      "confirmed-green": {
+        "role": "semantic",
+        "displayName": "Confirmed Green",
+        "canonical": "#18794e",
+        "tonalRamp": ["#08271a", "#0c432b", "#11603d", "#18794e", "#35a26e", "#70c69a", "#b6e4ce", "#e9f6ef"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Launch Display", "purpose": "The page proposition only." },
+      "body": { "displayName": "Operational Body", "purpose": "Explanations and step details." },
+      "label": { "displayName": "Evidence Label", "purpose": "Hashes, stage names, counts, and machine status." }
+    },
+    "shadows": [
+      { "name": "workspace-ambient", "value": "0 22px 55px rgba(27, 31, 38, 0.07)", "purpose": "Separates the unified launch workspace from the canvas." },
+      { "name": "control-hover", "value": "0 2px 8px rgba(20, 24, 30, 0.06)", "purpose": "Signals hover on quiet secondary controls." }
+    ],
+    "motion": [
+      { "name": "receipt-spinner", "value": "900ms linear", "purpose": "Shows a pending artifact or transaction operation." }
+    ],
+    "breakpoints": [
+      { "name": "rail-collapse", "value": "920px" },
+      { "name": "single-column", "value": "620px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Operation Button",
+      "kind": "button",
+      "refersTo": "button-operation",
+      "description": "The single strongest control for the next wallet-approved operation.",
+      "html": "<button class=\"ds-operation-button\">Continue</button>",
+      "css": ".ds-operation-button { min-height: 40px; border: 0; border-radius: 9px; padding: 0 15px; background: #b93424; color: #fff; font: 680 12px 'IBM Plex Sans', sans-serif; cursor: pointer; } .ds-operation-button:hover { filter: brightness(.96); } .ds-operation-button:focus-visible { outline: 2px solid #6574e8; outline-offset: 3px; } .ds-operation-button:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Active Status",
+      "kind": "chip",
+      "refersTo": "status-active",
+      "description": "A compact state label for the operation currently in progress.",
+      "html": "<span class=\"ds-status-active\">In progress</span>",
+      "css": ".ds-status-active { display: inline-flex; min-height: 30px; align-items: center; border: 1px solid #f3a394; border-radius: 999px; padding: 0 10px; background: #fff0ec; color: #b93424; font: 600 12px 'IBM Plex Sans', sans-serif; }"
+    },
+    {
+      "name": "Launch Workspace",
+      "kind": "card",
+      "refersTo": "panel-workspace",
+      "description": "The unified container for the runbook and its attached evidence rail.",
+      "html": "<section class=\"ds-launch-workspace\"><strong>Sepolia launch sequence</strong><p>One controlled operational run.</p></section>",
+      "css": ".ds-launch-workspace { border: 1px solid rgba(19,22,27,.18); border-radius: 18px; padding: 28px; background: #fff; color: #13161b; box-shadow: 0 22px 55px rgba(27,31,38,.07); font-family: 'IBM Plex Sans', sans-serif; } .ds-launch-workspace strong { font-size: 21px; } .ds-launch-workspace p { margin: 8px 0 0; color: #4b5360; font-size: 13px; }"
+    },
+    {
+      "name": "Runbook Step",
+      "kind": "custom",
+      "description": "A numbered deployment operation with supporting copy and machine metadata.",
+      "html": "<div class=\"ds-runbook-step\"><span class=\"ds-step-node\">02</span><div><strong>Connect the deployment authority</strong><p>Wallet approval is required for every write.</p></div><code>Not connected</code></div>",
+      "css": ".ds-runbook-step { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid rgba(19,22,27,.1); padding: 16px 0; color: #13161b; font-family: 'IBM Plex Sans', sans-serif; } .ds-step-node { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #b93424; color: #fff; font: 700 11px 'IBM Plex Mono', monospace; } .ds-runbook-step strong { display: block; font-size: 13px; } .ds-runbook-step p { margin: 5px 0 0; color: #707987; font-size: 12px; } .ds-runbook-step code { color: #b93424; font: 11px 'IBM Plex Mono', monospace; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "description": "A neutral utility control for refresh, disconnect, and local checks.",
+      "html": "<button class=\"ds-quiet-button\">Refresh</button>",
+      "css": ".ds-quiet-button { min-height: 34px; border: 1px solid rgba(19,22,27,.18); border-radius: 8px; padding: 0 12px; background: #fff; color: #4b5360; font: 620 11px 'IBM Plex Sans', sans-serif; cursor: pointer; } .ds-quiet-button:hover { color: #13161b; box-shadow: 0 2px 8px rgba(20,24,30,.06); } .ds-quiet-button:focus-visible { outline: 2px solid #6574e8; outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Proof Launch Console",
+    "overview": "StarkCircom feels like a precise launch instrument rather than a generic dashboard. One controlled sequence stays central, evidence remains adjacent, and Starknet coral appears only where attention or action is required.",
+    "keyCharacteristics": [
+      "A single operational runbook as the main spatial spine.",
+      "Adjacent evidence for authority, balances, addresses, and receipts.",
+      "Cool instrument surfaces with sparse coral emphasis.",
+      "Monospace text only for technical labels, hashes, counts, and status details.",
+      "Semantic colors reserved for confirmed, warning, and stopped states."
+    ],
+    "rules": [
+      { "name": "The One Live Signal Rule", "body": "Coral identifies the current operation only. Completed steps use green and waiting steps stay neutral.", "section": "colors" },
+      { "name": "The Semantic Reserve Rule", "body": "Green means confirmed, amber means attention, and red means stopped. These colors are not decorative.", "section": "colors" },
+      { "name": "The Evidence Type Rule", "body": "Use monospace only when the content is machine-shaped or operational. Explanations stay in the sans-serif face.", "section": "typography" },
+      { "name": "The Flat Evidence Rule", "body": "Evidence rows and status areas use borders and surface shifts, not independent floating shadows.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do make the next owner-approved operation the strongest control on the screen.",
+      "Do place transaction hashes, deployed addresses, and readback evidence near the launch sequence.",
+      "Do keep wrong-network, unfunded, pending, rejected, failed, and confirmed states visibly distinct.",
+      "Do preserve explicit language about local witnesses and synthetic manufacturer data."
+    ],
+    "donts": [
+      "Don't turn each deployment fact into a generic dashboard card.",
+      "Don't use coral across completed or passive content.",
+      "Don't hide wallet authority or imply that the app signs transactions.",
+      "Don't present a deployment as complete without confirmed receipts and state readback.",
+      "Don't add decorative gradients, glow effects, or oversized icons."
+    ]
+  }
+}
